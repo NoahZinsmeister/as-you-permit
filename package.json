@@ -31,11 +31,11 @@
   "size-limit": [
     {
       "path": "dist/as-you-permit.cjs.production.min.js",
-      "limit": "20 KB"
+      "limit": "50 KB"
     },
     {
       "path": "dist/as-you-permit.esm.js",
-      "limit": "20 KB"
+      "limit": "50 KB"
     }
   ],
   "devDependencies": {
