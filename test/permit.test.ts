@@ -49,40 +49,39 @@ describe('permit', () => {
               {
                 chainId,
                 tokenAddress,
-                owner: WALLET.address,
                 spender: SPENDER,
                 value:
                   '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-                nonce: 0,
                 deadline:
                   '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
               },
-              WALLET
+              WALLET,
+              () => Promise.resolve(0)
             )
             expect(permitCalldata).toBeTruthy()
           })
         )
       })
 
-      it('getPermitCalldataBySimulation', async () => {
+      it('ensure calldata from known data matches simulation results', async () => {
         const permitData = {
           chainId: contracts[tokenAddress].chainId,
           tokenAddress,
-          owner: WALLET.address,
           spender: SPENDER,
           value:
             '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-          nonce: 0,
           deadline:
             '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
         }
 
-        // for the chainId which we have an implementation for, ensure that the simulation matches
-        const permitCalldata = await getPermitCalldata(permitData, WALLET)
+        const permitCalldata = await getPermitCalldata(permitData, WALLET, () =>
+          Promise.resolve(0)
+        )
         const permitCalldataBySimulation = await getPermitCalldataBySimulation(
           contracts[tokenAddress].bytecode,
           permitData,
-          WALLET
+          WALLET,
+          () => Promise.resolve(0)
         )
         expect(permitCalldata).toEqual(permitCalldataBySimulation)
       })

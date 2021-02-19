@@ -8,36 +8,23 @@ import {
   variantDefinitions,
   VariantRequiredData,
   PermitCalldata,
+  PermitData,
 } from './variants'
 
-export interface PermitData {
-  chainId?: number
-  tokenAddress: string
-  owner: string
-  spender: string
-  value: BigNumberish
-  nonce: BigNumberish
-  deadline: BigNumberish
-}
-
-export interface PermitDataParsed {
+interface PermitDataParsed {
   chainId: number
   tokenAddress: string
-  owner: string
   spender: string
   value: BigNumber
-  nonce: BigNumber
   deadline: BigNumber
 }
 
 export function parsePermitData(permitData: PermitData): PermitDataParsed {
   return {
-    chainId: permitData.chainId ?? 1,
+    chainId: permitData.chainId,
     tokenAddress: getAddress(permitData.tokenAddress),
-    owner: getAddress(permitData.owner),
     spender: getAddress(permitData.spender),
     value: BigNumber.from(permitData.value),
-    nonce: BigNumber.from(permitData.nonce),
     deadline: BigNumber.from(permitData.deadline),
   }
 }
@@ -46,12 +33,17 @@ export async function getPermitCalldataByVariant(
   variant: Variant,
   variantRequiredData: VariantRequiredData[Variant],
   permitData: PermitDataParsed,
-  wallet: Wallet
+  wallet: Wallet,
+  getNonce: (fragment: string, inputs: [string]) => Promise<BigNumberish>
 ): Promise<PermitCalldata> {
   const variantDefinition = variantDefinitions[variant]
 
   switch (variant) {
     case Variant.Zero:
+      const nonce = await getNonce(variantDefinition.nonceFragment, [
+        wallet.address,
+      ])
+
       const { v, r, s } = splitSignature(
         await wallet._signTypedData(
           {
@@ -63,18 +55,18 @@ export async function getPermitCalldataByVariant(
             [variantDefinition.name]: variantDefinition.struct,
           },
           {
-            owner: permitData.owner,
+            owner: wallet.address,
             spender: permitData.spender,
             value: permitData.value,
-            nonce: permitData.nonce,
+            nonce,
             deadline: permitData.deadline,
           }
         )
       )
       return {
-        fragment: variantDefinition.fragment,
+        fragment: variantDefinition.permitFragment,
         inputs: [
-          permitData.owner,
+          wallet.address,
           permitData.spender,
           permitData.value,
           permitData.deadline,
@@ -96,13 +88,10 @@ export interface KnownContract {
 
 export async function getPermitCalldata(
   permitData: PermitData,
-  wallet: Wallet
+  wallet: Wallet,
+  getNonce: (fragment: string, inputs: [string]) => Promise<BigNumberish>
 ): Promise<PermitCalldata> {
   const permitDataParsed = parsePermitData(permitData)
-
-  // ensure owner is the wallet address
-  if (wallet.address !== permitDataParsed.owner)
-    throw Error('Wallet address is not owner.')
 
   // try to fetch contract data from known list
   return import(`./contracts/${permitDataParsed.tokenAddress}.json`).then(
@@ -114,7 +103,8 @@ export async function getPermitCalldata(
         knownContract.variant,
         knownContract.variantRequiredData,
         permitDataParsed,
-        wallet
+        wallet,
+        getNonce
       )
     }
   )

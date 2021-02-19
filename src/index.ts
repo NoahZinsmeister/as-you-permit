@@ -1,3 +1,3 @@
-export { VariantCalldata, PermitCalldata } from './variants'
-export { PermitData, PermitDataParsed, getPermitCalldata } from './permit'
+export { PermitData, VariantCalldata, PermitCalldata } from './variants'
+export { getPermitCalldata } from './permit'
 export { getPermitCalldataBySimulation } from './simulate'

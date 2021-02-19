@@ -16,12 +16,12 @@ describe('simulate', () => {
   // for all contracts
   Object.keys(contracts).forEach(tokenAddress => {
     describe(tokenAddress, () => {
-      let knownContract: KnownContract | null
+      let knownContract: KnownContract
 
       beforeAll(async () => {
         knownContract = await import(
           path.join(__dirname, '..', 'src', 'contracts', `${tokenAddress}.json`)
-        ).catch(() => null)
+        ).catch()
       })
 
       it('if contract is known, ensure the required data matches', async () => {
@@ -43,15 +43,14 @@ describe('simulate', () => {
           {
             chainId: contracts[tokenAddress].chainId,
             tokenAddress,
-            owner: WALLET.address,
             spender: SPENDER,
             value:
               '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-            nonce: 0,
             deadline:
               '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
           },
-          WALLET
+          WALLET,
+          () => Promise.resolve(0)
         )
         expect(permitCalldata).toBeTruthy()
       })

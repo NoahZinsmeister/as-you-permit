@@ -1,6 +1,6 @@
 import Common from '@ethereumjs/common'
 import VM from '@ethereumjs/vm'
-import { BigNumber } from '@ethersproject/bignumber'
+import { BigNumberish } from '@ethersproject/bignumber'
 import { Address } from 'ethereumjs-util'
 import { Wallet } from '@ethersproject/wallet'
 import {
@@ -10,12 +10,8 @@ import {
   Interface,
 } from '@ethersproject/abi'
 
-import { PermitCalldata, Variant } from './variants'
-import {
-  PermitData,
-  parsePermitData,
-  getPermitCalldataByVariant,
-} from './permit'
+import { PermitData, PermitCalldata, Variant } from './variants'
+import { parsePermitData, getPermitCalldataByVariant } from './permit'
 
 function getVM(chainId: number) {
   return new VM({ common: new Common({ chain: chainId }) })
@@ -25,24 +21,30 @@ export const WALLET = new Wallet(
   '0x00c0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffee00'
 )
 
-// only supports functions without inputs and with a single output
+// only supports functions with a single output
 export async function read({
   fragment,
   bytecode,
+  inputs,
 }: {
   fragment: string
   bytecode: string
+  inputs?: any[]
 }): Promise<any> {
   const functionFragment = FunctionFragment.from(Fragment.fromString(fragment))
   const contractInterface = new Interface([functionFragment])
 
   const sigHash = contractInterface.getSighash(functionFragment.name)
+  const inputsEncoded = defaultAbiCoder.encode(
+    functionFragment.inputs,
+    inputs ?? []
+  )
 
   const result = await getVM(1).runCall({
     caller: Address.zero(),
     to: Address.zero(),
     code: Buffer.from(bytecode, 'hex'),
-    data: Buffer.from(`${sigHash.slice(2)}`, 'hex'),
+    data: Buffer.from(`${sigHash.slice(2)}${inputsEncoded.slice(2)}`, 'hex'),
     static: true,
   })
 
@@ -56,19 +58,19 @@ export async function read({
   )[0]
 }
 
-// returns a bool for whether the write was successful
+// returns a bool for whether the write would be successful
 async function write({
   fragment,
   bytecode,
-  to,
   inputs,
   chainId,
+  to,
 }: {
   fragment: string
   bytecode: string
-  to: string
   inputs: any[]
   chainId: number
+  to: string
 }): Promise<boolean> {
   const functionFragment = FunctionFragment.from(Fragment.fromString(fragment))
   const contractInterface = new Interface([functionFragment])
@@ -93,13 +95,10 @@ async function write({
 export async function getPermitCalldataBySimulation(
   bytecode: string,
   permitData: PermitData,
-  wallet: Wallet
+  wallet: Wallet,
+  getNonce: (fragment: string, inputs: [string]) => Promise<BigNumberish>
 ): Promise<PermitCalldata> {
   const permitDataParsed = parsePermitData(permitData)
-
-  // ensure owner is the wallet address
-  if (wallet.address !== permitDataParsed.owner)
-    throw Error('Wallet address is not owner.')
 
   // try Variant.Zero
   const name = await read({
@@ -108,29 +107,32 @@ export async function getPermitCalldataBySimulation(
   }).catch(() => null)
 
   if (name) {
-    // simulate
     const callData = await getPermitCalldataByVariant(
       Variant.Zero,
       { name },
       {
         chainId: permitDataParsed.chainId,
         tokenAddress: permitDataParsed.tokenAddress,
-        owner: WALLET.address,
         spender: permitDataParsed.spender,
         value: permitDataParsed.value,
-        nonce: BigNumber.from(0),
         deadline: permitDataParsed.deadline,
       },
-      WALLET
+      WALLET,
+      (fragment, inputs) =>
+        read({
+          fragment,
+          inputs,
+          bytecode,
+        })
     ).catch(() => null)
 
     if (callData) {
       const success = await write({
         fragment: callData.fragment,
         bytecode,
-        to: permitDataParsed.tokenAddress,
         inputs: callData.inputs,
         chainId: permitDataParsed.chainId,
+        to: permitDataParsed.tokenAddress,
       }).catch(() => false)
 
       if (success) {
@@ -138,7 +140,8 @@ export async function getPermitCalldataBySimulation(
           Variant.Zero,
           { name },
           permitDataParsed,
-          wallet
+          wallet,
+          getNonce
         )
       }
     }

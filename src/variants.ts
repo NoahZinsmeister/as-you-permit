@@ -1,4 +1,4 @@
-import { BigNumber } from '@ethersproject/bignumber'
+import { BigNumber, BigNumberish } from '@ethersproject/bignumber'
 
 export enum Variant {
   Zero, // UNI
@@ -7,7 +7,8 @@ export enum Variant {
 interface VariantDefinition {
   name: string
   struct: { name: string; type: string }[]
-  fragment: string
+  nonceFragment: string
+  permitFragment: string
 }
 
 export const variantDefinitions: Record<Variant, VariantDefinition> = {
@@ -35,7 +36,9 @@ export const variantDefinitions: Record<Variant, VariantDefinition> = {
         type: 'uint256',
       },
     ],
-    fragment:
+    nonceFragment:
+      'function nonces(address owner) view returns (uint256 nonce)',
+    permitFragment:
       'function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)',
   },
 }
@@ -44,6 +47,14 @@ export interface VariantRequiredData {
   [Variant.Zero]: {
     name: string
   }
+}
+
+export interface PermitData {
+  chainId: number
+  tokenAddress: string
+  spender: string
+  value: BigNumberish
+  deadline: BigNumberish
 }
 
 export interface VariantCalldata {
