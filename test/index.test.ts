@@ -41,9 +41,9 @@ describe('getPermitSignatureViaWallet', () => {
               WALLET
             )
 
-            expect(v).toBeTruthy
-            expect(r).toBeTruthy
-            expect(s).toBeTruthy
+            expect(v).toBeTruthy // eslint-disable-line @typescript-eslint/no-unused-expressions
+            expect(r).toBeTruthy // eslint-disable-line @typescript-eslint/no-unused-expressions
+            expect(s).toBeTruthy // eslint-disable-line @typescript-eslint/no-unused-expressions
           })
         )
       })
