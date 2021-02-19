@@ -15,9 +15,7 @@
     "build": "tsdx build",
     "test": "tsdx test --no-cache",
     "lint": "tsdx lint",
-    "prepare": "tsdx build",
-    "size": "size-limit",
-    "analyze": "size-limit --why"
+    "prepare": "tsdx build"
   },
   "peerDependencies": {},
   "prettier": {
@@ -28,20 +26,8 @@
   "name": "as-you-permit",
   "author": "Noah Zinsmeister",
   "module": "dist/as-you-permit.esm.js",
-  "size-limit": [
-    {
-      "path": "dist/as-you-permit.cjs.production.min.js",
-      "limit": "50 KB"
-    },
-    {
-      "path": "dist/as-you-permit.esm.js",
-      "limit": "50 KB"
-    }
-  ],
   "devDependencies": {
-    "@size-limit/preset-small-lib": "^4.9.2",
     "rollup-plugin-copy": "^3.4.0",
-    "size-limit": "^4.9.2",
     "tsdx": "^0.14.1",
     "tslib": "^2.1.0",
     "typescript": "^4.1.5"
@@ -53,5 +39,9 @@
     "@ethersproject/bignumber": "^5.0.14",
     "@ethersproject/bytes": "^5.0.10",
     "@ethersproject/wallet": "^5.0.11"
+  },
+  "resolutions": {
+    "**/@typescript-eslint/eslint-plugin": "^4.6.1",
+    "**/@typescript-eslint/parser": "^4.6.1"
   }
 }
