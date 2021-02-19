@@ -1,56 +1,59 @@
-import { WALLET, SPENDER, read, simulateWrite } from '../src/simulate'
-import { Variant } from '../src/variants'
-
-import { getPermitSignatureByVariantViaWallet } from '../src'
+import path from 'path'
 
 import { contracts } from './contracts'
 
+// public imports
+import { getPermitCalldataBySimulation } from '../src'
+
+// private imports for testing
+import { read, WALLET } from '../src/simulate'
+import { KnownContract } from '../src/permit'
+import { Variant } from '../src/variants'
+
+const SPENDER = '0x00C0FfeEc0FFEec0ffEeC0fFEEc0FfEeC0ffEE00'
+
 describe('simulate', () => {
-  describe('UNI', () => {
-    const address = '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984'
+  // for all contracts
+  Object.keys(contracts).forEach(tokenAddress => {
+    describe(tokenAddress, () => {
+      let knownContract: KnownContract | null
 
-    it('name', async () => {
-      const name = await read({
-        fragment: 'function name() pure returns (string)',
-        bytecode: contracts[address],
-        chainId: 1,
+      beforeAll(async () => {
+        knownContract = await import(
+          path.join(__dirname, '..', 'src', 'contracts', `${tokenAddress}.json`)
+        ).catch(() => null)
       })
-      expect(name).toBe('Uniswap')
-    })
 
-    it('permit', async () => {
-      const { v, r, s } = await getPermitSignatureByVariantViaWallet(
-        Variant.Zero,
-        { name: 'Uniswap' },
-        {
-          chainId: 1,
-          tokenAddress: address,
-          owner: WALLET.address,
-          spender: SPENDER,
-          value:
-            '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-          nonce: 0,
-          deadline:
-            '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-        },
-        WALLET
-      )
+      it('if contract is known, ensure the required data matches', async () => {
+        if (knownContract) {
+          switch (knownContract.variant) {
+            case Variant.Zero:
+              const name = await read({
+                fragment: 'function name() pure returns (string)',
+                bytecode: contracts[tokenAddress].bytecode,
+              })
+              expect(name).toBe(knownContract.variantRequiredData.name)
+          }
+        }
+      })
 
-      await simulateWrite({
-        fragment:
-          'function permit(address owner, address spender, uint rawAmount, uint deadline, uint8 v, bytes32 r, bytes32 s)',
-        bytecode: contracts[address],
-        address,
-        inputs: [
-          WALLET.address,
-          SPENDER,
-          '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-          '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-          v,
-          r,
-          s,
-        ],
-        chainId: 1,
+      it('getPermitCalldataBySimulation', async () => {
+        const permitCalldata = await getPermitCalldataBySimulation(
+          contracts[tokenAddress].bytecode,
+          {
+            chainId: contracts[tokenAddress].chainId,
+            tokenAddress,
+            owner: WALLET.address,
+            spender: SPENDER,
+            value:
+              '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+            nonce: 0,
+            deadline:
+              '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+          },
+          WALLET
+        )
+        expect(permitCalldata).toBeTruthy()
       })
     })
   })
