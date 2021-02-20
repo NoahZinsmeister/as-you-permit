@@ -46,6 +46,7 @@ export const variantDefinitions: Record<Variant, VariantDefinition> = {
 export interface VariantRequiredData {
   [Variant.Zero]: {
     name: string
+    version?: string
   }
 }
 

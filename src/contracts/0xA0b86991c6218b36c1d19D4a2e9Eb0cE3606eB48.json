@@ -1,0 +1,8 @@
+{
+  "chainIds": [1],
+  "variant": 0,
+  "variantRequiredData": {
+    "name": "USD Coin",
+    "version": "2"
+  }
+}

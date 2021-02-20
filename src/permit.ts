@@ -47,7 +47,7 @@ export async function getPermitCalldataByVariant(
       const { v, r, s } = splitSignature(
         await wallet._signTypedData(
           {
-            name: variantRequiredData.name,
+            ...variantRequiredData,
             chainId: permitData.chainId,
             verifyingContract: permitData.tokenAddress,
           },

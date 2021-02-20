@@ -17,9 +17,7 @@ function getVM(chainId: number) {
   return new VM({ common: new Common({ chain: chainId }) })
 }
 
-export const WALLET = new Wallet(
-  '0x00c0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffeec0ffee00'
-)
+export const WALLET = Wallet.createRandom()
 
 // only supports functions with a single output
 export async function read({
@@ -106,7 +104,7 @@ export async function getPermitCalldataBySimulation(
     bytecode,
   }).catch(() => null)
 
-  if (name) {
+  if (name !== null) {
     const callData = await getPermitCalldataByVariant(
       Variant.Zero,
       { name },
@@ -126,7 +124,7 @@ export async function getPermitCalldataBySimulation(
         })
     ).catch(() => null)
 
-    if (callData) {
+    if (callData !== null) {
       const success = await write({
         fragment: callData.fragment,
         bytecode,

@@ -1,6 +1,6 @@
 import path from 'path'
 
-import { contracts } from './contracts'
+import contracts from './contracts.json'
 
 // public imports
 import { getPermitCalldataBySimulation } from '../src'
@@ -16,6 +16,10 @@ describe('simulate', () => {
   // for all contracts
   Object.keys(contracts).forEach(tokenAddress => {
     describe(tokenAddress, () => {
+      const implementation: {
+        chainId: number
+        bytecode: string
+      } = (contracts as any)[tokenAddress]
       let knownContract: KnownContract
 
       beforeAll(async () => {
@@ -30,7 +34,7 @@ describe('simulate', () => {
             case Variant.Zero:
               const name = await read({
                 fragment: 'function name() pure returns (string)',
-                bytecode: contracts[tokenAddress].bytecode,
+                bytecode: implementation.bytecode,
               })
               expect(name).toBe(knownContract.variantRequiredData.name)
           }
@@ -39,9 +43,9 @@ describe('simulate', () => {
 
       it('getPermitCalldataBySimulation', async () => {
         const permitCalldata = await getPermitCalldataBySimulation(
-          contracts[tokenAddress].bytecode,
+          implementation.bytecode,
           {
-            chainId: contracts[tokenAddress].chainId,
+            chainId: implementation.chainId,
             tokenAddress,
             spender: SPENDER,
             value:
