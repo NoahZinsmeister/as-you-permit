@@ -52,7 +52,10 @@ export async function getPermitCalldataByProvider(
             deadline: permitDataParsed.deadline,
           },
           WALLET,
-          (_, __) => nonce
+          async (_, __) => {
+            if ((await nonce) === null) throw Error('Unable to fetch nonce.')
+            return nonce
+          }
         ).catch(() => null)
       )
     )
