@@ -27,6 +27,8 @@
   "author": "Noah Zinsmeister",
   "module": "dist/as-you-permit.esm.js",
   "devDependencies": {
+    "dotenv": "^8.2.0",
+    "hardhat": "^2.0.10",
     "rollup-plugin-copy": "^3.4.0",
     "tsdx": "^0.14.1",
     "tslib": "^2.1.0",
@@ -38,6 +40,8 @@
     "@ethersproject/address": "^5.0.10",
     "@ethersproject/bignumber": "^5.0.14",
     "@ethersproject/bytes": "^5.0.10",
+    "@ethersproject/contracts": "^5.0.11",
+    "@ethersproject/providers": "^5.0.23",
     "@ethersproject/wallet": "^5.0.11"
   },
   "resolutions": {

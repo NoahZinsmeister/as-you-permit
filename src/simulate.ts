@@ -17,7 +17,7 @@ function getVM(chainId: number) {
   return new VM({ common: new Common({ chain: chainId }) })
 }
 
-export const WALLET = Wallet.createRandom()
+const WALLET = Wallet.createRandom()
 
 // only supports functions with a single output
 export async function read({

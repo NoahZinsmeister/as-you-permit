@@ -1,21 +1,18 @@
 import path from 'path'
 import fs from 'fs'
+import { Wallet } from '@ethersproject/wallet'
 
 import contracts from './contracts.json'
+import exemptions from './exemptions.json'
 
 // public imports
 import { getPermitCalldata, getPermitCalldataBySimulation } from '../src'
 
 // private imports for testing
 import { KnownContract } from '../src/permit'
-import { WALLET } from '../src/simulate'
 
+const WALLET = Wallet.createRandom()
 const SPENDER = '0x00C0FfeEc0FFEec0ffEeC0fFEEc0FfEeC0ffEE00'
-
-// these contracts must be tested manually
-const KNOWN_CONTRACTS_WITH_EXEMPTIONS = [
-  '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC, upgradable
-]
 
 describe('permit', () => {
   const knownContractFilenames: string[] = fs.readdirSync(
@@ -39,7 +36,7 @@ describe('permit', () => {
       })
 
       it('ensure that each known contract also has a valid implemention, unless exempt', () => {
-        if (!KNOWN_CONTRACTS_WITH_EXEMPTIONS.includes(tokenAddress)) {
+        if (!exemptions.includes(tokenAddress)) {
           expect(implementation).toBeTruthy()
           expect(knownContract.chainIds.includes(implementation.chainId)).toBe(
             true
@@ -72,7 +69,7 @@ describe('permit', () => {
       })
 
       it('ensure calldata from known data matches simulation results', async () => {
-        if (!KNOWN_CONTRACTS_WITH_EXEMPTIONS.includes(tokenAddress)) {
+        if (!exemptions.includes(tokenAddress)) {
           const permitData = {
             chainId: implementation.chainId,
             tokenAddress,

@@ -1,4 +1,5 @@
 import path from 'path'
+import { Wallet } from '@ethersproject/wallet'
 
 import contracts from './contracts.json'
 
@@ -6,10 +7,11 @@ import contracts from './contracts.json'
 import { getPermitCalldataBySimulation } from '../src'
 
 // private imports for testing
-import { read, WALLET } from '../src/simulate'
+import { read } from '../src/simulate'
 import { KnownContract } from '../src/permit'
 import { Variant } from '../src/variants'
 
+const WALLET = Wallet.createRandom()
 const SPENDER = '0x00C0FfeEc0FFEec0ffEeC0fFEEc0FfEeC0ffEE00'
 
 describe('simulate', () => {
