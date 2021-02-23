@@ -5,20 +5,26 @@
 1. `cp .env.example .env`
 2. Populate `.env` with a valid `FORKING_URL`
 
+# Development
+
+1. `yarn`
+2. `yarn start`
+3. `yarn test`
+
 # TODOs
-
-- directly expose functionality to gather signatures against a known variant?
-
-- set up even non-exempt known contracts with mainnet integration testing
-
-- add bytecode fetching wrappers for simulation purposes
-  - https://api.etherscan.io/api?module=proxy&action=eth_getCode&address=0xB7277a6e95992041568D9391D09d0122023778A2&tag=latest&apikey=YourApiKeyToken
-  - https://eth.wiki/json-rpc/API
 
 - add support for other tokens
   - DAI
   - CHAI
   - Radicle
 
+- add bytecode fetching wrappers for simulation purposes
+  - https://api.etherscan.io/api?module=proxy&action=eth_getCode&address=0xB7277a6e95992041568D9391D09d0122023778A2&tag=latest&apikey=YourApiKeyToken
+  - https://eth.wiki/json-rpc/API
+
 - add support for token factories
   - UNI-V2 LP shares
+
+- directly expose functionality to gather signatures against a known variant?
+
+- set up even non-exempt known contracts with mainnet integration testing
