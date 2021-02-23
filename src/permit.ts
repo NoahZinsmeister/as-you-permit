@@ -6,9 +6,11 @@ import { splitSignature } from '@ethersproject/bytes'
 import {
   Variant,
   variantDefinitions,
-  VariantRequiredData,
+  VariantData,
   PermitCalldata,
   PermitData,
+  KnownToken,
+  nonceFragment,
 } from './variants'
 
 interface PermitDataParsed {
@@ -31,28 +33,26 @@ export function parsePermitData(permitData: PermitData): PermitDataParsed {
 
 export async function getPermitCalldataByVariant(
   variant: Variant,
-  variantRequiredData: VariantRequiredData[Variant],
+  variantData: VariantData[Variant],
   permitData: PermitDataParsed,
   wallet: Wallet,
   getNonce: (fragment: string, inputs: [string]) => Promise<BigNumberish>
 ): Promise<PermitCalldata> {
+  const nonce = await getNonce(nonceFragment, [wallet.address])
+
   const variantDefinition = variantDefinitions[variant]
 
   switch (variant) {
-    case Variant.Zero:
-      const nonce = await getNonce(variantDefinition.nonceFragment, [
-        wallet.address,
-      ])
-
+    case Variant.Canonical:
       const { v, r, s } = splitSignature(
         await wallet._signTypedData(
           {
-            ...variantRequiredData,
+            ...variantData,
             chainId: permitData.chainId,
             verifyingContract: permitData.tokenAddress,
           },
           {
-            [variantDefinition.name]: variantDefinition.struct,
+            [variantDefinition.structName]: variantDefinition.struct,
           },
           {
             owner: wallet.address,
@@ -64,7 +64,7 @@ export async function getPermitCalldataByVariant(
         )
       )
       return {
-        fragment: variantDefinition.permitFragment,
+        fragment: variantDefinition.fragment,
         inputs: [
           wallet.address,
           permitData.spender,
@@ -80,28 +80,22 @@ export async function getPermitCalldataByVariant(
   }
 }
 
-export interface KnownContract {
-  chainIds: number[]
-  variant: Variant
-  variantRequiredData: VariantRequiredData[Variant]
-}
-
-export async function getPermitCalldata(
+export async function getPermitCalldataOfKnownToken(
   permitData: PermitData,
   wallet: Wallet,
   getNonce: (fragment: string, inputs: [string]) => Promise<BigNumberish>
 ): Promise<PermitCalldata> {
   const permitDataParsed = parsePermitData(permitData)
 
-  // try to fetch contract data from known list
-  return import(`./contracts/${permitDataParsed.tokenAddress}.json`).then(
-    (knownContract: KnownContract) => {
-      if (!knownContract.chainIds.includes(permitDataParsed.chainId))
+  // try to fetch known token data
+  return import(`./tokens/${permitDataParsed.tokenAddress}.json`).then(
+    (knownToken: KnownToken) => {
+      if (!knownToken.chainIds.includes(permitDataParsed.chainId))
         throw Error('Unsupported chainId.')
 
       return getPermitCalldataByVariant(
-        knownContract.variant,
-        knownContract.variantRequiredData,
+        knownToken.variant,
+        knownToken.data,
         permitDataParsed,
         wallet,
         getNonce

@@ -1,19 +1,22 @@
 import { BigNumber, BigNumberish } from '@ethersproject/bignumber'
 
+// constant across variants
+export const nonceFragment =
+  'function nonces(address owner) view returns (uint256 nonce)'
+
 export enum Variant {
-  Zero, // UNI
+  Canonical, // EIP-2612
 }
 
 interface VariantDefinition {
-  name: string
+  structName: string
   struct: { name: string; type: string }[]
-  nonceFragment: string
-  permitFragment: string
+  fragment: string
 }
 
 export const variantDefinitions: Record<Variant, VariantDefinition> = {
-  [Variant.Zero]: {
-    name: 'Permit',
+  [Variant.Canonical]: {
+    structName: 'Permit',
     struct: [
       {
         name: 'owner',
@@ -36,18 +39,22 @@ export const variantDefinitions: Record<Variant, VariantDefinition> = {
         type: 'uint256',
       },
     ],
-    nonceFragment:
-      'function nonces(address owner) view returns (uint256 nonce)',
-    permitFragment:
+    fragment:
       'function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)',
   },
 }
 
-export interface VariantRequiredData {
-  [Variant.Zero]: {
+export interface VariantData {
+  [Variant.Canonical]: {
     name: string
     version?: string
   }
+}
+
+export interface KnownToken {
+  chainIds: number[]
+  variant: Variant
+  data: VariantData[Variant]
 }
 
 export interface PermitData {
@@ -59,7 +66,7 @@ export interface PermitData {
 }
 
 export interface VariantCalldata {
-  [Variant.Zero]: [
+  [Variant.Canonical]: [
     string, // owner
     string, // spender
     BigNumber, // value

@@ -8,11 +8,13 @@ import {
   PermitCalldata,
   Variant,
   variantDefinitions,
+  nonceFragment,
 } from './variants'
 import { parsePermitData, getPermitCalldataByVariant } from './permit'
 
 const WALLET = Wallet.createRandom()
 
+// note that the chainId of the `provider` must match that specified in `permitData`
 export async function getPermitCalldataByProvider(
   provider: Provider,
   permitData: PermitData,
@@ -20,29 +22,31 @@ export async function getPermitCalldataByProvider(
   getNonce?: (fragment: string, inputs: [string]) => Promise<BigNumberish>
 ): Promise<PermitCalldata> {
   const permitDataParsed = parsePermitData(permitData)
-  if (permitDataParsed.chainId !== 1) throw Error('Invalid chainId.')
-
   const contract = new Contract(
     permitDataParsed.tokenAddress,
     [
+      nonceFragment,
       'function name() pure returns (string)',
-      variantDefinitions[Variant.Zero].nonceFragment,
-      variantDefinitions[Variant.Zero].permitFragment,
+      variantDefinitions[Variant.Canonical].fragment,
     ],
     provider
   )
 
-  // try Variant.Zero
-  const nonce = contract.nonces(WALLET.address).catch(() => null)
+  // kick off nonce call right away
+  const nonce = contract.nonces(WALLET.address).catch(() => {
+    throw Error('Unable to fetch nonce.')
+  })
+
+  // try Variant.Canonical
   const name = await contract.name().catch(() => null)
 
   if (name !== null) {
-    // TODO iterate over versions in a nicer way here
-    const versions = [null, '2']
-    const callDatas = await Promise.all(
+    // iterate over possible versions (somewhat janky, don't see a nice way around it though)
+    const versions = [null, '1', '2']
+    const version: (null | string) | undefined = await Promise.any(
       versions.map(version =>
         getPermitCalldataByVariant(
-          Variant.Zero,
+          Variant.Canonical,
           { name, ...(version ? { version } : {}) },
           {
             chainId: permitDataParsed.chainId,
@@ -52,36 +56,22 @@ export async function getPermitCalldataByProvider(
             deadline: permitDataParsed.deadline,
           },
           WALLET,
-          async (_, __) => {
-            if ((await nonce) === null) throw Error('Unable to fetch nonce.')
-            return nonce
-          }
-        ).catch(() => null)
-      )
-    )
-
-    if (callDatas.some(callData => callData !== null)) {
-      const successes = await Promise.all(
-        callDatas.map(callData => {
-          if (callData === null) return false
-          return contract.callStatic
-            .permit(...callData.inputs)
-            .then(() => true)
-            .catch(() => false)
-        })
-      )
-
-      if (successes.some(success => success)) {
-        const index = successes.findIndex(success => success)
-        const version = versions[index]
-        return getPermitCalldataByVariant(
-          Variant.Zero,
-          { name, ...(version ? { version } : {}) },
-          permitDataParsed,
-          wallet,
-          getNonce || ((_, __) => contract.nonces(wallet.address))
+          () => nonce
+        ).then(callData =>
+          contract.callStatic.permit(...callData.inputs).then(() => version)
         )
-      }
+      )
+    ).catch(() => undefined)
+
+    // version is only undefined if none of our tries worked
+    if (version !== undefined) {
+      return getPermitCalldataByVariant(
+        Variant.Canonical,
+        { name, ...(version ? { version } : {}) },
+        permitDataParsed,
+        wallet,
+        getNonce || (() => contract.nonces(wallet.address))
+      )
     }
   }
 

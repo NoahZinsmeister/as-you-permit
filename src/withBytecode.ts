@@ -10,17 +10,22 @@ import {
   Interface,
 } from '@ethersproject/abi'
 
-import { PermitData, PermitCalldata, Variant } from './variants'
+import { PermitData, PermitCalldata, Variant, nonceFragment } from './variants'
 import { parsePermitData, getPermitCalldataByVariant } from './permit'
 
+const VMs: { [chainId: number]: VM } = {}
+
 function getVM(chainId: number) {
-  return new VM({ common: new Common({ chain: chainId }) })
+  const existingVM = VMs[chainId]
+  if (existingVM !== undefined) return existingVM
+  VMs[chainId] = new VM({ common: new Common({ chain: chainId }) })
+  return VMs[chainId]
 }
 
 const WALLET = Wallet.createRandom()
 
 // only supports functions with a single output
-export async function read({
+async function read({
   fragment,
   bytecode,
   inputs,
@@ -56,7 +61,7 @@ export async function read({
   )[0]
 }
 
-// returns a bool for whether the write would be successful
+// throws if the write would fail
 async function write({
   fragment,
   bytecode,
@@ -69,7 +74,7 @@ async function write({
   inputs: any[]
   chainId: number
   to: string
-}): Promise<boolean> {
+}): Promise<void> {
   const functionFragment = FunctionFragment.from(Fragment.fromString(fragment))
   const contractInterface = new Interface([functionFragment])
 
@@ -86,8 +91,6 @@ async function write({
   if (result.execResult.exceptionError) {
     throw result.execResult.exceptionError
   }
-
-  return true
 }
 
 export async function getPermitCalldataBySimulation(
@@ -96,52 +99,61 @@ export async function getPermitCalldataBySimulation(
   wallet: Wallet,
   getNonce: (fragment: string, inputs: [string]) => Promise<BigNumberish>
 ): Promise<PermitCalldata> {
+  // kick off nonce call right away
+  const nonce = read({
+    fragment: nonceFragment,
+    bytecode,
+    inputs: [WALLET.address],
+  }).catch(() => {
+    throw Error('Unable to fetch nonce.')
+  })
+
   const permitDataParsed = parsePermitData(permitData)
 
-  // try Variant.Zero
+  // try Variant.Canonical
   const name = await read({
     fragment: 'function name() pure returns (string)',
     bytecode,
   }).catch(() => null)
 
   if (name !== null) {
-    const callData = await getPermitCalldataByVariant(
-      Variant.Zero,
-      { name },
-      {
-        chainId: permitDataParsed.chainId,
-        tokenAddress: permitDataParsed.tokenAddress,
-        spender: permitDataParsed.spender,
-        value: permitDataParsed.value,
-        deadline: permitDataParsed.deadline,
-      },
-      WALLET,
-      (fragment, inputs) =>
-        read({
-          fragment,
-          inputs,
-          bytecode,
-        })
-    ).catch(() => null)
-
-    if (callData !== null) {
-      const success = await write({
-        fragment: callData.fragment,
-        bytecode,
-        inputs: callData.inputs,
-        chainId: permitDataParsed.chainId,
-        to: permitDataParsed.tokenAddress,
-      }).catch(() => false)
-
-      if (success) {
-        return getPermitCalldataByVariant(
-          Variant.Zero,
+    // iterate over possible versions (somewhat janky, don't see a nice way around it though)
+    const versions = [null, '1', '2']
+    const version: (null | string) | undefined = await Promise.any(
+      versions.map(version =>
+        getPermitCalldataByVariant(
+          Variant.Canonical,
           { name },
-          permitDataParsed,
-          wallet,
-          getNonce
+          {
+            chainId: permitDataParsed.chainId,
+            tokenAddress: permitDataParsed.tokenAddress,
+            spender: permitDataParsed.spender,
+            value: permitDataParsed.value,
+            deadline: permitDataParsed.deadline,
+          },
+          WALLET,
+          () => nonce
+        ).then(callData =>
+          write({
+            fragment: callData.fragment,
+            bytecode,
+            inputs: callData.inputs,
+            chainId: permitDataParsed.chainId,
+            to: permitDataParsed.tokenAddress,
+          }).then(() => version)
         )
-      }
+      )
+    ).catch(() => undefined)
+
+    // version is only undefined if none of our tries worked
+    if (version !== undefined) {
+      return getPermitCalldataByVariant(
+        Variant.Canonical,
+        { name, ...(version ? { version } : {}) },
+        permitDataParsed,
+        wallet,
+        getNonce
+      )
     }
   }
 
