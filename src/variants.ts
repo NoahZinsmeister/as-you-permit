@@ -58,11 +58,11 @@ export interface KnownToken {
 }
 
 export interface PermitData {
-  chainId: number
+  chainId?: number
   tokenAddress: string
   spender: string
-  value: BigNumberish
-  deadline: BigNumberish
+  value?: BigNumberish
+  deadline?: BigNumberish
 }
 
 export interface VariantCalldata {

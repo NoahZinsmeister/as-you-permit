@@ -45,10 +45,6 @@ describe('known tokens', () => {
                   chainId,
                   tokenAddress: tokenAddress,
                   spender: SPENDER,
-                  value:
-                    '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-                  deadline:
-                    '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
                 },
                 WALLET,
                 () => Promise.resolve(0)
@@ -69,10 +65,6 @@ describe('known tokens', () => {
                 chainId: Number(chainId),
                 tokenAddress: tokenAddress,
                 spender: SPENDER,
-                value:
-                  '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-                deadline:
-                  '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
               }
 
               const known = await getPermitCalldataOfKnownToken(
@@ -94,18 +86,12 @@ describe('known tokens', () => {
 
         it('getPermitCalldataByProvider matches known implementation', async () => {
           // we only test against mainnet at the moment
-          const chainId = 1
-          const provider = PROVIDERS[chainId]
+          const provider = PROVIDERS[1]
           const { tokenAddress } = knownTokens[i]
 
           const permitData = {
-            chainId,
             tokenAddress: tokenAddress,
             spender: SPENDER,
-            value:
-              '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
-            deadline:
-              '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
           }
 
           const known = await getPermitCalldataOfKnownToken(

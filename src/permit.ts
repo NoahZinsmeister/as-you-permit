@@ -21,13 +21,16 @@ interface PermitDataParsed {
   deadline: BigNumber
 }
 
+const MAX_UINT256 =
+  '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+
 export function parsePermitData(permitData: PermitData): PermitDataParsed {
   return {
-    chainId: permitData.chainId,
+    chainId: permitData.chainId ?? 1,
     tokenAddress: getAddress(permitData.tokenAddress),
     spender: getAddress(permitData.spender),
-    value: BigNumber.from(permitData.value),
-    deadline: BigNumber.from(permitData.deadline),
+    value: BigNumber.from(permitData.value ?? MAX_UINT256),
+    deadline: BigNumber.from(permitData.deadline ?? MAX_UINT256),
   }
 }
 
