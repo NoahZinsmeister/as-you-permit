@@ -12,6 +12,12 @@ dotenv.config()
 export const SPENDER = '0x00C0FfeEc0FFEec0ffEeC0fFEEc0FfEeC0ffEE00'
 export const WALLET = wallet.Wallet.createRandom()
 
+if (
+  typeof process.env.URL_MAINNET !== 'string' ||
+  process.env.URL_MAINNET.length === 0
+)
+  throw Error('Please provide a valid URL_MAINNET')
+
 export const PROVIDERS: { [chainId: number]: providers.Provider } = {
   1: new providers.JsonRpcProvider(process.env.URL_MAINNET),
 }

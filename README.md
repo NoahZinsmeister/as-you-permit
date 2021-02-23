@@ -16,10 +16,12 @@
   - DAI
   - CHAI
   - Radicle
+  - Stake (?)
 
 - add bytecode fetching wrappers for simulation purposes
   - https://api.etherscan.io/api?module=proxy&action=eth_getCode&address=0xB7277a6e95992041568D9391D09d0122023778A2&tag=latest&apikey=YourApiKeyToken
   - https://eth.wiki/json-rpc/API
+  - test that returned bytecode matches that which was supplied
 
 - add support for token factories?
   - UNI-V2 LP shares
