@@ -28,7 +28,7 @@ jobs:
       - name: Test
         run: yarn test --ci --coverage --maxWorkers=2
         env:
-          FORKING_URL: ${{ secrets.FORKING_URL }}
+          URL_MAINNET: ${{ secrets.URL_MAINNET }}
 
       - name: Build
         run: yarn build
