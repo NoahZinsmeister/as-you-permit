@@ -45,10 +45,10 @@ async function read({
 
   const result = await getVM(1).runCall({
     caller: Address.zero(),
-    to: Address.zero(),
     code: Buffer.from(bytecode, 'hex'),
     data: Buffer.from(`${sigHash.slice(2)}${inputsEncoded.slice(2)}`, 'hex'),
     static: true,
+    to: Address.zero(),
   })
 
   if (result.execResult.exceptionError) {
@@ -83,9 +83,9 @@ async function write({
 
   const result = await getVM(chainId).runCall({
     caller: Address.zero(),
-    to: Address.fromString(to),
     code: Buffer.from(bytecode, 'hex'),
     data: Buffer.from(`${sigHash.slice(2)}${inputsEncoded.slice(2)}`, 'hex'),
+    to: Address.fromString(to),
   })
 
   if (result.execResult.exceptionError) {
@@ -123,7 +123,7 @@ export async function getPermitCalldataBySimulation(
       versions.map(version =>
         getPermitCalldataByVariant(
           Variant.Canonical,
-          { name },
+          { name, ...(version ? { version } : {}) },
           {
             chainId: permitDataParsed.chainId,
             tokenAddress: permitDataParsed.tokenAddress,

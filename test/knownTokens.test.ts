@@ -43,7 +43,7 @@ describe('known tokens', () => {
               const permitCalldata = await getPermitCalldataOfKnownToken(
                 {
                   chainId,
-                  tokenAddress: tokenAddress,
+                  tokenAddress,
                   spender: SPENDER,
                 },
                 WALLET,
@@ -63,7 +63,7 @@ describe('known tokens', () => {
             Object.keys(bytecode).map(async chainId => {
               const permitData = {
                 chainId: Number(chainId),
-                tokenAddress: tokenAddress,
+                tokenAddress,
                 spender: SPENDER,
               }
 
@@ -90,7 +90,7 @@ describe('known tokens', () => {
           const { tokenAddress } = knownTokens[i]
 
           const permitData = {
-            tokenAddress: tokenAddress,
+            tokenAddress,
             spender: SPENDER,
           }
 
